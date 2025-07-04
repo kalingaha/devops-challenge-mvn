@@ -37,6 +37,12 @@ steps:
         # Explicitly install jq in this step to ensure it's available
         apt-get update && apt-get install -y jq
 
+        # --- NEW: Install the 'container-analysis' gcloud component ---
+        echo "Installing gcloud component: container-analysis..."
+        gcloud components install container-analysis --quiet
+        echo "container-analysis component installed."
+        # --- END NEW ---
+
         echo "Scanning image: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA"
 
         # Initiate the on-demand scan. This command will wait for the scan operation to complete.
