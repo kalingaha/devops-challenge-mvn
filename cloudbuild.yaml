@@ -1,0 +1,35 @@
+substitutions:
+  _REGION: "us-central1"
+  _REPO: "devops-repo"
+  _SERVICE_NAME: "devops-challenge"
+
+steps:
+  # 1. Build and Test the Java application (using Maven in the app directory)
+  - name: 'maven:3.9.6-amazoncorretto-17' # Use a Maven builder with Java 17
+    id: 'Build and Test Java App'
+    entrypoint: 'mvn'
+    args: ['clean', 'install'] # 'install' also runs tests by default
+    dir: 'app' # IMPORTANT: Execute Maven commands from the 'app' directory
+
+  # 2. Build Docker image using the Dockerfile in the 'app' directory
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Docker Image'
+    args: [
+      'build',
+      '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA',
+      './app' # IMPORTANT: Tell Docker to look for Dockerfile and context in 'app'
+    ]
+  # 3. Push Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Docker Image'
+    args: [
+      'push',
+      '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
+    ]
+
+
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
+
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
