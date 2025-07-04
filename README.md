@@ -1,1 +1,1 @@
-# devops-challenge-mvn
+# devops challenge for maven
