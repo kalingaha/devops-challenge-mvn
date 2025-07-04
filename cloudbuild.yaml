@@ -62,17 +62,7 @@ steps:
         # Check if the file was created and has content. If not, assume no critical/high issues.
         if [ ! -s vulnerability_occurrences.json ]; then
             echo "Warning: vulnerability_occurrences.json is empty or not created. This might mean no vulnerabilities were found, or an issue occurred during fetching."
-            #NUM_CRITICAL=0
-            #NUM_HIGH=0
-        #else
-            # Use jq to parse the JSON and count critical/high vulnerabilities.
-            # The -r flag ensures raw output for bash comparison.
-            #NUM_CRITICAL=$(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")] | length' vulnerability_occurrences.json)
-            #NUM_HIGH=$(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="HIGH")] | length' vulnerability_occurrences.json)
-
-            # Default to 0 if jq returns an empty string (e.g., no matches found)
-            #NUM_CRITICAL=${NUM_CRITICAL:-0}
-            #NUM_HIGH=${NUM_HIGH:-0}
+           
         fi
 
         echo "Total Critical vulnerabilities found: $(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")] | length' vulnerability_occurrences.json)"
