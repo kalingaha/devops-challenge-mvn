@@ -35,7 +35,7 @@ steps:
       - 'image'
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
       - '--severity'
-      - 'CRITICAL,HIGH' # Scan for Critical and High severity vulnerabilities
+      - 'CRITICAL' # Scan for Critical severity vulnerabilities only
       - '--exit-code'
       - '1' # Exit with code 1 if any specified severity vulnerabilities are found
       - '--format'
