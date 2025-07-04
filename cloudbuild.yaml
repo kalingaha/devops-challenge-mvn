@@ -9,7 +9,7 @@ steps:
   # Assuming your Terraform files are in a directory named 'iac' at the root of your repo
   - name: 'hashicorp/terraform:1.12.0' # Or a specific version like 'hashicorp/terraform:1.8.5'
     id: 'Terraform Init, Validate, Plan'
-    entrypoint: 'bash'
+    entrypoint: 'sh'
     dir: 'iac' # IMPORTANT: Change to the directory containing your Terraform files
     args:
       - '-c'
