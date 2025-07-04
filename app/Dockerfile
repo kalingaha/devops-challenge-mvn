@@ -18,7 +18,7 @@ RUN mvn package -DskipTests
 
 # Stage 2: Create the final, slim runtime image
 # Use a lightweight JRE (Java Runtime Environment) image
-FROM 17.0.15-alpine3.21 AS final
+FROM amazoncorretto:17.0.15-alpine3.21 AS final
 
 # Create a non-root user and group
 # Alpine's 'addgroup -S' creates a system group, 'adduser -S -G' creates a system user.
