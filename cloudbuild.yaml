@@ -27,61 +27,22 @@ steps:
       '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
     ]
 
-  # 4. Container vulnerability scan (fail on CRITICAL)
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Scan image'
-    entrypoint: 'bash'
+  # 4. Container vulnerability scan using Trivy
+  - name: 'aquasec/trivy:latest' # Use the official Trivy Docker image
+    id: 'Scan image with Trivy'
+    entrypoint: 'trivy'
     args:
-      - -c
-      - |
-        # Explicitly install jq in this step to ensure it's available
-        apt-get update && apt-get install -y jq
-
-        # --- NEW: Install the 'container-analysis' gcloud component ---
-        echo "Installing gcloud component: container-analysis..."
-        gcloud components install container-analysis --quiet
-        echo "container-analysis component installed."
-        # --- END NEW ---
-
-        echo "Scanning image: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA"
-
-        # Initiate the on-demand scan. This command will wait for the scan operation to complete.
-        # It does NOT directly output the vulnerability findings, but rather the operation metadata.
-        gcloud artifacts docker images scan "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA" --remote
-
-        echo "Scan operation completed. Now fetching detailed vulnerability occurrences from Container Analysis..."
-
-        # Query Container Analysis for actual vulnerability occurrences linked to the image.
-        # This is where the detailed vulnerability data resides after a scan.
-        gcloud container analysis occurrences list \
-            --resource-url="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA" \
-            --filter='kind="VULNERABILITY"' \
-            --format=json > vulnerability_occurrences.json
-
-        # --- DEBUG STEP: Print the content of the vulnerability_occurrences.json file ---
-        # This is helpful for debugging and can be removed once the pipeline is stable.
-        echo "--- Content of vulnerability_occurrences.json ---"
-        cat vulnerability_occurrences.json
-        echo "---------------------------------------------------"
-        # --- END DEBUG STEP ---
-
-        # Check if the file was created and has content. If not, assume no critical/high issues.
-        if [ ! -s vulnerability_occurrences.json ]; then
-            echo "Warning: vulnerability_occurrences.json is empty or not created. This might mean no vulnerabilities were found, or an issue occurred during fetching."
-           
-        fi
-
-        echo "Total Critical vulnerabilities found: $(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")] | length' vulnerability_occurrences.json)"
-
-        if [ "$(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")] | length' vulnerability_occurrences.json)" -gt 0 ]; then
-          echo "❌ CRITICAL vulnerabilities found. Failing build."
-          # Print details for CRITICAL vulnerabilities for easier debugging
-          jq '.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")' vulnerability_occurrences.json
-          exit 1 # <--- THIS LINE MAKES THE BUILD FAIL ON CRITICAL
-        else
-          echo "✅ No CRITICAL or HIGH vulnerabilities found."
-        fi
-  # --- END Container vulnerability scan ---
+      - 'image'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
+      - '--severity'
+      - 'CRITICAL,HIGH' # Scan for Critical and High severity vulnerabilities
+      - '--exit-code'
+      - '1' # Exit with code 1 if any specified severity vulnerabilities are found
+      - '--format'
+      - 'table' # Output format (table is good for logs, json/sarif for parsing)
+      - '--no-progress' # Suppress progress bar in CI/CD logs
+      - '--vuln-type' # Optional: Specify vulnerability types (os, library)
+      - 'os,library' # Only check OS package and application library vulnerabilities
   
 images:
   - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
