@@ -72,6 +72,37 @@ steps:
 
         echo "Terraform init, validate, and plan completed successfully."
 
+
+  # 6. Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk' # Use the gcloud SDK builder
+    id: 'Deploy to Cloud Run'
+    entrypoint: 'gcloud' # Directly use gcloud as the entrypoint
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}' # The Cloud Run service name from substitutions
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA' # The image we built and pushed
+      - '--region=${_REGION}' # The region for the Cloud Run service from substitutions
+      - '--platform=managed' # Specifies Cloud Run (fully managed)
+      - '--allow-unauthenticated' # IMPORTANT: Allows public access. Remove or adjust for private services.
+      # You can add more flags here as needed, e.g.:
+      # - '--min-instances=0' # Default
+      # - '--max-instances=10' # Default
+      # - '--cpu=1' # Default
+      # - '--memory=512Mi' # Default
+      # - '--port=8080' # Default for Spring Boot, specify if different
+      # - '--set-env-vars=MY_ENV_VAR=my_value' # For environment variables
+      # - '--ingress=internal' # For internal-only access (e.g., from VPC)
+      # - '--service-account=my-service-account@${PROJECT_ID}.iam.gserviceaccount.com' # If not using default
+    waitFor:
+      - 'Push Docker Image' # Ensure image is pushed
+      - 'Scan image with Trivy' # Ensure image is scanned and passed checks
+      # - 'Terraform Init, Validate, Plan' # Uncomment if you want to explicitly wait for Terraform plan to complete
+
+  # --- Remaining pipeline steps (Health Check, Write Summary) ---
+  # These will be commented out for now, to be added later
+
   
 images:
   - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
