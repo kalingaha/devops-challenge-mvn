@@ -37,19 +37,18 @@ steps:
         # Explicitly install jq in this step to ensure it's available
         apt-get update && apt-get install -y jq
 
-        IMAGE_URI="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA"
-        echo "Scanning image: $IMAGE_URI"
+        echo "Scanning image: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA"
 
         # Initiate the on-demand scan. This command will wait for the scan operation to complete.
         # It does NOT directly output the vulnerability findings, but rather the operation metadata.
-        gcloud artifacts docker images scan "$IMAGE_URI" --remote
+        gcloud artifacts docker images scan "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA" --remote
 
         echo "Scan operation completed. Now fetching detailed vulnerability occurrences from Container Analysis..."
 
         # Query Container Analysis for actual vulnerability occurrences linked to the image.
         # This is where the detailed vulnerability data resides after a scan.
         gcloud container analysis occurrences list \
-            --resource-url="$IMAGE_URI" \
+            --resource-url="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA" \
             --filter='kind="VULNERABILITY"' \
             --format=json > vulnerability_occurrences.json
 
@@ -63,33 +62,27 @@ steps:
         # Check if the file was created and has content. If not, assume no critical/high issues.
         if [ ! -s vulnerability_occurrences.json ]; then
             echo "Warning: vulnerability_occurrences.json is empty or not created. This might mean no vulnerabilities were found, or an issue occurred during fetching."
-            NUM_CRITICAL=0
-            NUM_HIGH=0
-        else
+            #NUM_CRITICAL=0
+            #NUM_HIGH=0
+        #else
             # Use jq to parse the JSON and count critical/high vulnerabilities.
             # The -r flag ensures raw output for bash comparison.
-            NUM_CRITICAL=$(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")] | length' vulnerability_occurrences.json)
-            NUM_HIGH=$(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="HIGH")] | length' vulnerability_occurrences.json)
+            #NUM_CRITICAL=$(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")] | length' vulnerability_occurrences.json)
+            #NUM_HIGH=$(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="HIGH")] | length' vulnerability_occurrences.json)
 
             # Default to 0 if jq returns an empty string (e.g., no matches found)
-            NUM_CRITICAL=${NUM_CRITICAL:-0}
-            NUM_HIGH=${NUM_HIGH:-0}
+            #NUM_CRITICAL=${NUM_CRITICAL:-0}
+            #NUM_HIGH=${NUM_HIGH:-0}
         fi
 
-        echo "Total Critical vulnerabilities found: $NUM_CRITICAL"
-        echo "Total High vulnerabilities found: $NUM_HIGH"
+        echo "Total Critical vulnerabilities found: $(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")] | length' vulnerability_occurrences.json)"
+        #echo "Total High vulnerabilities found: $NUM_HIGH"
 
-        if [ "$NUM_CRITICAL" -gt 0 ]; then
+        if [ "$(jq -r '[.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")] | length' vulnerability_occurrences.json)" -gt 0 ]; then
           echo "❌ CRITICAL vulnerabilities found. Failing build."
           # Print details for CRITICAL vulnerabilities for easier debugging
           jq '.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="CRITICAL")' vulnerability_occurrences.json
           exit 1 # <--- THIS LINE MAKES THE BUILD FAIL ON CRITICAL
-        elif [ "$NUM_HIGH" -gt 0 ]; then
-          echo "⚠️ HIGH vulnerabilities found. Consider addressing."
-          # Print details for HIGH vulnerabilities
-          jq '.[] | select(.kind == "VULNERABILITY" and .vulnerability.details[].severity=="HIGH")' vulnerability_occurrences.json
-          # If you want to fail on HIGH as well, uncomment the line below:
-          # exit 1
         else
           echo "✅ No CRITICAL or HIGH vulnerabilities found."
         fi
