@@ -43,6 +43,34 @@ steps:
       - '--no-progress' # Suppress progress bar in CI/CD logs
       - '--vuln-type' # Optional: Specify vulnerability types (os, library)
       - 'os,library' # Only check OS package and application library vulnerabilities
+
+
+  # 5. Terraform Init, Validate, and Plan
+  # Assuming your Terraform files are in a directory named 'iac' at the root of your repo
+  - name: 'hashicorp/terraform:latest' # Or a specific version like 'hashicorp/terraform:1.8.5'
+    id: 'Terraform Init, Validate, Plan'
+    entrypoint: 'bash'
+    dir: 'iac' # IMPORTANT: Change to the directory containing your Terraform files
+    args:
+      - '-c'
+      - |
+        # Initialize Terraform backend and providers
+        # -input=false: Don't prompt for input
+        # -lock=false: No state locking during init (be careful if multiple builds could run concurrently)
+        # -reconfigure: Useful if backend config changes, but can also be used generally.
+        terraform init -input=false
+
+        # Validate Terraform configuration syntax and consistency
+        terraform validate
+
+        # Generate a Terraform plan and save it to a file
+        # -out=planfile: Saves the plan to 'planfile' for later 'terraform apply' if desired
+        # -lock=false: Disables state locking during plan (again, use with caution)
+        # Add -var flags or -var-file if your plan requires input variables
+        terraform plan -out=planfile -lock=false
+
+        echo "Terraform init, validate, and plan completed successfully."
+
   
 images:
   - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
