@@ -14,7 +14,7 @@
 
     <properties>
         <java.version>17</java.version> </properties>
-
+         <tomcat.version>10.1.35</tomcat.version>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
