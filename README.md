@@ -46,15 +46,11 @@ This CI/CD pipeline, defined in `cloudbuild.yml`, automates the software deliver
 
 During the development of this pipeline, several design decisions and trade-offs were made:
 
-1.  **Terraform "Plan Only" vs. "Apply":**
-    * **Trade-off:** The Terraform step currently only performs `init`, `validate`, and `plan`. It does **not** automatically apply infrastructure changes (`terraform apply`).
-    * **Reasoning:** For a development environment or a proof-of-concept, a fully automated `terraform apply` might be acceptable. However, in production or more mature environments, it's often preferred to have a manual approval step after a `terraform plan` is reviewed. This provides a human gate to prevent unintended infrastructure modifications. For this initial setup, we opted for the safer "plan only" approach, acknowledging that a manual step would be required to provision new infrastructure changes.
-
-2.  **Container Security Scan (Trivy) Severity:**
+1.  **Container Security Scan (Trivy) Severity:**
     * **Trade-off:** The Trivy scan is configured to fail the build only on `CRITICAL` severity vulnerabilities (`--severity CRITICAL --exit-code 1`).
     * **Reasoning:** While scanning for all severities (low, medium, high, critical) provides the most comprehensive security posture, it can also lead to frequent build failures due to less urgent vulnerabilities, especially in the early stages of development or when using third-party base images/libraries. By focusing on `CRITICAL` issues, we prioritize the most immediate and severe risks, allowing the pipeline to proceed while still catching major security flaws. This balances security rigor with pipeline efficiency. A more mature pipeline might gradually increase the required severity level or introduce vulnerability exemption policies.
 
-3.  **Publicly Accessible Cloud Run Service (`--allow-unauthenticated`):**
+2.  **Publicly Accessible Cloud Run Service (`--allow-unauthenticated`):**
     * **Trade-off:** The Cloud Run service is deployed with `--allow-unauthenticated`, making it publicly accessible to anyone on the internet.
     * **Reasoning:** For a demo or a simple web application, public access is desired for easy testing and visibility. However, for internal services or APIs handling sensitive data, this would be a significant security risk. A more secure approach would involve private services with controlled access via Identity-Aware Proxy (IAP), VPC Service Controls, or internal load balancers. This trade-off prioritizes ease of access for the challenge over strict security lockdown, which would add complexity beyond the scope of this initial pipeline.
 
