@@ -31,6 +31,10 @@ WORKDIR /app
 # The JAR name is usually artifactId-version.jar
 COPY --from=build /app/target/devops-0.0.1-SNAPSHOT.jar app.jar
 
+# Add the --add-opens JVM arguments here
+# These arguments are required for Tomcat 10.1.x with Java 17+
+ENV JAVA_TOOL_OPTIONS="--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED"
+
 # Expose the port the Spring Boot app will run on
 EXPOSE 8080
 
