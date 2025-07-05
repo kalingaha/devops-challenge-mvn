@@ -22,15 +22,15 @@ steps:
           --format='value(status.url)' \
           --project=${PROJECT_ID})
 
-        echo "Cloud Run Service URL: ${SERVICE_URL}"
+        echo "Cloud Run Service URL: ${_SERVICE_URL}"
 
         _HEALTH_URL="${_SERVICE_URL}${_HEALTH_CHECK_PATH}"
         _MAX_RETRIES=10
         _RETRY_INTERVAL=10 # seconds
 
-        echo "Starting health check for ${HEALTH_URL}"
+        echo "Starting health check for ${_HEALTH_URL}"
 
-        for i in $(seq 1 $MAX_RETRIES); do
+        for i in $(seq 1 $_MAX_RETRIES); do
           echo "Attempt $i/$MAX_RETRIES: Curling ${HEALTH_URL}..."
           # Use -f to fail silently on HTTP errors, -s for silent output, -o /dev/null to discard body
           curl -f -s -o /dev/null "${HEALTH_URL}"
