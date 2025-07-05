@@ -3,6 +3,7 @@ substitutions:
   _REPO: "devops-repo"
   _SERVICE_NAME: "devops-challenge"
   _HEALTH_CHECK_PATH: "/health"
+  _SERVICE_URL: ""
 
 steps:
 
@@ -16,16 +17,16 @@ steps:
       - '-c'
       - |
         # Get the Cloud Run Service URL
-        SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} \
+        _SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} \
           --region=${_REGION} \
           --format='value(status.url)' \
           --project=${PROJECT_ID})
 
         echo "Cloud Run Service URL: ${SERVICE_URL}"
 
-        HEALTH_URL="${SERVICE_URL}${_HEALTH_CHECK_PATH}"
-        MAX_RETRIES=10
-        RETRY_INTERVAL=10 # seconds
+        _HEALTH_URL="${_SERVICE_URL}${_HEALTH_CHECK_PATH}"
+        _MAX_RETRIES=10
+        _RETRY_INTERVAL=10 # seconds
 
         echo "Starting health check for ${HEALTH_URL}"
 
