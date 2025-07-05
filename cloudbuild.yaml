@@ -3,7 +3,6 @@ substitutions:
   _REPO: "devops-repo"
   _SERVICE_NAME: "devops-challenge"
   _HEALTH_CHECK_PATH: "/health"
-  _SERVICE_URL: ""
 
 steps:
 
@@ -22,30 +21,36 @@ steps:
           --format='value(status.url)' \
           --project=${PROJECT_ID})
 
-        echo "Cloud Run Service URL: ${_SERVICE_URL}"
+        echo "Cloud Run Service URL: $(gcloud run services describe ${_SERVICE_NAME} \
+          --region=${_REGION} \
+          --format='value(status.url)' \
+          --project=${PROJECT_ID})"
 
         _HEALTH_URL="${_SERVICE_URL}${_HEALTH_CHECK_PATH}"
         _MAX_RETRIES=10
         _RETRY_INTERVAL=10 # seconds
 
-        echo "Starting health check for ${_HEALTH_URL}"
+        echo "Starting health check ............"
 
-        for i in $(seq 1 ${_MAX_RETRIES}); do
-          echo "Attempt $i/${_MAX_RETRIES}: Curling ${_HEALTH_URL}..."
+        for i in $(seq 1 20); do
+          echo "Attempt $i/20: Curling ..."
           # Use -f to fail silently on HTTP errors, -s for silent output, -o /dev/null to discard body
-          curl -f -s -o /dev/null "${_HEALTH_URL}"
-          _CURL_EXIT_CODE=$?
+          curl -f -s -o /dev/null "$(gcloud run services describe ${_SERVICE_NAME} \
+          --region=${_REGION} \
+          --format='value(status.url)' \
+          --project=${PROJECT_ID})"${_HEALTH_CHECK_PATH}"
+         
 
-          if [ ${_CURL_EXIT_CODE} -eq 0 ]; then
-            echo "Health check successful! (${_HEALTH_URL} returned HTTP 200)"
+          if [ $? -eq 0 ]; then
+            echo "Health check successful!"
             exit 0 # Success
           else
-            echo "Health check failed (exit code: ${_CURL_EXIT_CODE}). Retrying in ${_RETRY_INTERVAL} seconds..."
-            sleep ${_RETRY_INTERVAL}
+            echo "Health check failed (exit code: $? ). Retrying in 10 seconds..."
+            sleep 10
           fi
         done
 
-        echo "Health check failed after ${_MAX_RETRIES} attempts."
+        echo "Health check failed after 20 attempts."
         exit 1 # Failure
     #waitFor:
      # - 'Deploy to Cloud Run' # Ensure deployment is complete before health check
@@ -72,7 +77,10 @@ steps:
         echo "**Service Name:** \`${_SERVICE_NAME}\`" >> /workspace/_OUT.md
         echo "**Region:** \`${_REGION}\`" >> /workspace/_OUT.md
         echo "" >> /workspace/_OUT.md
-        echo "🔗 **Service URL:** [${_SERVICE_URL}](${_SERVICE_URL})" >> /workspace/_OUT.md
+        echo "🔗 **Service URL:** $(gcloud run services describe ${_SERVICE_NAME} \
+          --region=${_REGION} \
+          --format='value(status.url)' \
+          --project=${PROJECT_ID})" >> /workspace/_OUT.md
         echo "" >> /workspace/_OUT.md
         echo "---" >> /workspace/_OUT.md
 
