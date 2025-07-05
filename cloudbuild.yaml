@@ -47,8 +47,8 @@ steps:
 
         echo "Health check failed after ${_MAX_RETRIES} attempts."
         exit 1 # Failure
-    waitFor:
-      - 'Deploy to Cloud Run' # Ensure deployment is complete before health check
+    #waitFor:
+     # - 'Deploy to Cloud Run' # Ensure deployment is complete before health check
 
   # 8. Write Cloud Run URL to Job Summary
   # This uses the same method to get the URL and then pipes it to a Cloud Build-specific file
