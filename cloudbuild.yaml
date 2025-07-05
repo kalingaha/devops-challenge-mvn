@@ -38,7 +38,8 @@ steps:
         for i in $(seq 1 20); do
           echo "Attempt $i/20: Curling ..."
           # Use -f to fail silently on HTTP errors, -s for silent output, -o /dev/null to discard body
-          curl -f -s -o /dev/null "${_SERVICE_URL}${_HEALTH_CHECK_PATH}"
+          #curl -f -s -o /dev/null "${_SERVICE_URL}${_HEALTH_CHECK_PATH}"
+          curl -f -s -o https://devops-challenge-ejc24ng3fa-uc.a.run.app
          
 
           if [ $? -eq 0 ]; then
