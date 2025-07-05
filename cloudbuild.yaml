@@ -6,7 +6,6 @@ substitutions:
 
 steps:
 
-
   # 1. Build and Test the Java application (using Maven in the app directory)
   - name: 'maven:3.9.6-amazoncorretto-17' # Use a Maven builder with Java 17
     id: 'Build and Test Java App'
@@ -59,8 +58,6 @@ steps:
       - |
         # Initialize Terraform backend and providers
         # -input=false: Don't prompt for input
-        # -lock=false: No state locking during init (be careful if multiple builds could run concurrently)
-        # -reconfigure: Useful if backend config changes, but can also be used generally.
         terraform init -input=false
 
         # Validate Terraform configuration syntax and consistency
@@ -111,11 +108,6 @@ steps:
       - '-c'
       - |
         # Get the Cloud Run Service URL
-        _SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} \
-          --region=${_REGION} \
-          --format='value(status.url)' \
-          --project=${PROJECT_ID})
-        echo "app URL : ${_SERVICE_URL}"
         echo "Cloud Run Service URL: $(gcloud run services describe ${_SERVICE_NAME} \
           --region=${_REGION} \
           --format='value(status.url)' \
@@ -125,34 +117,30 @@ steps:
           --region=${_REGION} \
           --format='value(status.url)' \
           --project=${PROJECT_ID})${_HEALTH_CHECK_PATH}"
-        _MAX_RETRIES=10
-        _RETRY_INTERVAL=10 # seconds
 
         echo "Starting health check ............"
 
-        for i in $(seq 1 3); do
+        for i in $(seq 1 10); do
           echo "Attempt $i/3: Curling ..."
           # Use -f to fail silently on HTTP errors, -s for silent output, -o /dev/null to discard body
           curl -f -s -o /dev/null $(gcloud run services describe ${_SERVICE_NAME} \
           --region=${_REGION} \
           --format='value(status.url)' \
           --project=${PROJECT_ID})${_HEALTH_CHECK_PATH}
-          #curl -f -s https://devops-challenge-ejc24ng3fa-uc.a.run.app
          
-
           if [ $? -eq 0 ]; then
             echo "Health check successful!"
             exit 0 # Success
           else
-            echo "Health check failed (exit code: $? ). Retrying in 5 seconds..."
-            sleep 10
+            echo "Health check failed (exit code: $? ). Retrying in 3 seconds..."
+            sleep 3
           fi
         done
 
-        echo "Health check failed after 20 attempts."
+        echo "Health check failed after 10 attempts."
         exit 1 # Failure
-    #waitFor:
-     # - 'Deploy to Cloud Run' # Ensure deployment is complete before health check
+    waitFor:
+      - 'Deploy to Cloud Run' # Ensure deployment is complete before health check
 
   # 8. Write Cloud Run URL to Job Summary
   # This uses the same method to get the URL and then pipes it to a Cloud Build-specific file
@@ -176,10 +164,18 @@ steps:
         echo "**Service Name:** \`${_SERVICE_NAME}\`" >> /workspace/_OUT.md
         echo "**Region:** \`${_REGION}\`" >> /workspace/_OUT.md
         echo "" >> /workspace/_OUT.md
+        echo "****************************************************************************" >> /workspace/_OUT.md
+        echo "**" >> /workspace/_OUT.md
+        echo "**" >> /workspace/_OUT.md
+        echo "**" >> /workspace/_OUT.md
         echo "🔗 **Service URL:** $(gcloud run services describe ${_SERVICE_NAME} \
           --region=${_REGION} \
           --format='value(status.url)' \
           --project=${PROJECT_ID})" >> /workspace/_OUT.md
+        echo "**" >> /workspace/_OUT.md
+        echo "**" >> /workspace/_OUT.md
+        echo "**" >> /workspace/_OUT.md
+        echo "****************************************************************************" >> /workspace/_OUT.md
         echo "" >> /workspace/_OUT.md
         echo "---" >> /workspace/_OUT.md
 
