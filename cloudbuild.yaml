@@ -121,7 +121,7 @@ steps:
         echo "Starting health check ............"
 
         for i in $(seq 1 10); do
-          echo "Attempt $i/3: Curling ..."
+          echo "Attempt $i/10: Curling ..."
           # Use -f to fail silently on HTTP errors, -s for silent output, -o /dev/null to discard body
           curl -f -s -o /dev/null $(gcloud run services describe ${_SERVICE_NAME} \
           --region=${_REGION} \
