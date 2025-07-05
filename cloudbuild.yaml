@@ -36,10 +36,13 @@ steps:
         echo "Starting health check ............"
 
         for i in $(seq 1 3); do
-          echo "Attempt $i/20: Curling ..."
+          echo "Attempt $i/3: Curling ..."
           # Use -f to fail silently on HTTP errors, -s for silent output, -o /dev/null to discard body
-          #curl -f -s -o /dev/null "${_SERVICE_URL}${_HEALTH_CHECK_PATH}"
-          curl -f -s https://devops-challenge-ejc24ng3fa-uc.a.run.app
+          curl -f -s -o /dev/null $(gcloud run services describe ${_SERVICE_NAME} \
+          --region=${_REGION} \
+          --format='value(status.url)' \
+          --project=${PROJECT_ID})${_HEALTH_CHECK_PATH}
+          #curl -f -s https://devops-challenge-ejc24ng3fa-uc.a.run.app
          
 
           if [ $? -eq 0 ]; then
