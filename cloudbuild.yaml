@@ -30,18 +30,18 @@ steps:
 
         echo "Starting health check for ${_HEALTH_URL}"
 
-        for i in $(seq 1 $_MAX_RETRIES); do
-          echo "Attempt $i/$MAX_RETRIES: Curling ${HEALTH_URL}..."
+        for i in $(seq 1 ${_MAX_RETRIES}); do
+          echo "Attempt $i/${_MAX_RETRIES}: Curling ${_HEALTH_URL}..."
           # Use -f to fail silently on HTTP errors, -s for silent output, -o /dev/null to discard body
-          curl -f -s -o /dev/null "${HEALTH_URL}"
-          CURL_EXIT_CODE=$?
+          curl -f -s -o /dev/null "${_HEALTH_URL}"
+          _CURL_EXIT_CODE=$?
 
-          if [ $CURL_EXIT_CODE -eq 0 ]; then
-            echo "Health check successful! (${HEALTH_URL} returned HTTP 200)"
+          if [ ${_CURL_EXIT_CODE} -eq 0 ]; then
+            echo "Health check successful! (${_HEALTH_URL} returned HTTP 200)"
             exit 0 # Success
           else
-            echo "Health check failed (exit code: $CURL_EXIT_CODE). Retrying in ${RETRY_INTERVAL} seconds..."
-            sleep $RETRY_INTERVAL
+            echo "Health check failed (exit code: ${_CURL_EXIT_CODE}). Retrying in ${_RETRY_INTERVAL} seconds..."
+            sleep ${_RETRY_INTERVAL}
           fi
         done
 
@@ -59,7 +59,7 @@ steps:
       - '-c'
       - |
         # Get the Cloud Run Service URL again (can be done in a separate step or passed via artifact)
-        SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} \
+        _SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} \
           --region=${_REGION} \
           --format='value(status.url)' \
           --project=${PROJECT_ID})
