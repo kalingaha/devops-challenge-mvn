@@ -20,13 +20,16 @@ steps:
           --region=${_REGION} \
           --format='value(status.url)' \
           --project=${PROJECT_ID})
-        echo "app URL :${_SERVICE_URL}"
+        echo "app URL : ${_SERVICE_URL}"
         echo "Cloud Run Service URL: $(gcloud run services describe ${_SERVICE_NAME} \
           --region=${_REGION} \
           --format='value(status.url)' \
           --project=${PROJECT_ID})"
 
-        _HEALTH_URL="${_SERVICE_URL}${_HEALTH_CHECK_PATH}"
+        echo "Health URL : $(gcloud run services describe ${_SERVICE_NAME} \
+          --region=${_REGION} \
+          --format='value(status.url)' \
+          --project=${PROJECT_ID})${_HEALTH_CHECK_PATH}"
         _MAX_RETRIES=10
         _RETRY_INTERVAL=10 # seconds
 
@@ -35,7 +38,7 @@ steps:
         for i in $(seq 1 20); do
           echo "Attempt $i/20: Curling ..."
           # Use -f to fail silently on HTTP errors, -s for silent output, -o /dev/null to discard body
-          curl -f -s -o /dev/null "${_HEALTH_URL}"
+          curl -f -s -o /dev/null "${_SERVICE_URL}${_HEALTH_CHECK_PATH}"
          
 
           if [ $? -eq 0 ]; then
