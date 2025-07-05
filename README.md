@@ -1,6 +1,8 @@
 # DevOps Challenge: Cloud Build CI/CD Pipeline
 
-This repository contains a simple Spring Boot application and a Google Cloud Build CI/CD pipeline (`cloudbuild.yml`) designed to automate the build, test, security scan, infrastructure provisioning (via Terraform), deployment, and health checking of the application on Google Cloud Run.
+This repository contains a simple Spring Boot application and a Google Cloud Build CI/CD pipeline (`cloudbuild.yml`) designed to automate the build, test, security scan, infrastructure provisioning (via Terraform), deployment, and health checking of the application on Google Cloud Run. The Cloud Build logs and a summary of the build can be seen on github by clicking the green tick ( or red X ) which appears next to the commit.   
+
+
 
 ## Pipeline Description
 
@@ -26,7 +28,6 @@ This CI/CD pipeline, defined in `cloudbuild.yml`, automates the software deliver
 5.  **Terraform Init, Validate, and Plan:**
     * **Tool:** Terraform (`hashicorp/terraform:1.12.0`)
     * **Purpose:** Initializes the Terraform working directory, validates the `.tf` configuration files for syntax and consistency, and generates an execution plan. This step ensures that our Infrastructure as Code (IaC) is valid and previews the infrastructure changes before actual application.
-    * **Note:** For this pipeline, Terraform is currently only planning. A `terraform apply` step would be needed for automated infrastructure provisioning.
 
 6.  **Deploy to Cloud Run:**
     * **Tool:** Google Cloud SDK (`gcr.io/google.com/cloudsdktool/cloud-sdk`)
@@ -53,17 +54,13 @@ During the development of this pipeline, several design decisions and trade-offs
     * **Trade-off:** The Trivy scan is configured to fail the build only on `CRITICAL` severity vulnerabilities (`--severity CRITICAL --exit-code 1`).
     * **Reasoning:** While scanning for all severities (low, medium, high, critical) provides the most comprehensive security posture, it can also lead to frequent build failures due to less urgent vulnerabilities, especially in the early stages of development or when using third-party base images/libraries. By focusing on `CRITICAL` issues, we prioritize the most immediate and severe risks, allowing the pipeline to proceed while still catching major security flaws. This balances security rigor with pipeline efficiency. A more mature pipeline might gradually increase the required severity level or introduce vulnerability exemption policies.
 
-3.  **No Comprehensive Integration/End-to-End Tests:**
-    * **Trade-off:** The pipeline currently only runs unit tests via Maven and a simple HTTP health check. There are no dedicated integration or end-to-end (E2E) tests.
-    * **Reasoning:** For a foundational CI/CD pipeline, focusing on rapid feedback from unit tests and basic deployment verification is a good starting point. Adding comprehensive integration and E2E tests would significantly increase build times and complexity. While crucial for production-grade applications, they were omitted in this initial setup to prioritize a lean and fast pipeline. This is a common trade-off between speed and test coverage, with a plan to expand testing as the project matures.
-
-4.  **Publicly Accessible Cloud Run Service (`--allow-unauthenticated`):**
+3.  **Publicly Accessible Cloud Run Service (`--allow-unauthenticated`):**
     * **Trade-off:** The Cloud Run service is deployed with `--allow-unauthenticated`, making it publicly accessible to anyone on the internet.
     * **Reasoning:** For a demo or a simple web application, public access is desired for easy testing and visibility. However, for internal services or APIs handling sensitive data, this would be a significant security risk. A more secure approach would involve private services with controlled access via Identity-Aware Proxy (IAP), VPC Service Controls, or internal load balancers. This trade-off prioritizes ease of access for the challenge over strict security lockdown, which would add complexity beyond the scope of this initial pipeline.
 
 ## Time Spent
 
-The approximate time spent on setting up and debugging this CI/CD pipeline, from initial setup to a fully functional state, was **~8 hours**.
+The approximate time spent on setting up and debugging this CI/CD pipeline, from initial setup to a fully functional state, was **~16 hours**.
 
 This includes:
 
@@ -77,3 +74,4 @@ This includes:
     * "Revision not ready" (due to Spring Boot not binding to `PORT` environment variable).
     * "Setting IAM policy failed" for `--allow-unauthenticated` (due to subtle Cloud Build SA permissions with the Cloud Run Service Agent).
 * Implementing health checks and job summary.
+
