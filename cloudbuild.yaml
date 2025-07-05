@@ -85,7 +85,7 @@ steps:
       - '--region=${_REGION}' # The region for the Cloud Run service from substitutions
       - '--platform=managed' # Specifies Cloud Run (fully managed)
       - '--allow-unauthenticated' # IMPORTANT: Allows public access. Remove or adjust for private services.
-      - '--service-account=devops-cloudrun-sa@devopschallenge-464711.iam.gserviceaccount.com
+      - '--service-account=devops-cloudrun-sa@devopschallenge-464711.iam.gserviceaccount.com' # custom SA 
       # You can add more flags here as needed, e.g.:
       # - '--min-instances=0' # Default
       # - '--max-instances=10' # Default
