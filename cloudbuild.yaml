@@ -45,7 +45,7 @@ steps:
           fi
         done
 
-        echo "Health check failed after $MAX_RETRIES attempts."
+        echo "Health check failed after ${_MAX_RETRIES} attempts."
         exit 1 # Failure
     waitFor:
       - 'Deploy to Cloud Run' # Ensure deployment is complete before health check
