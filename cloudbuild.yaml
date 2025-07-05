@@ -7,6 +7,101 @@ substitutions:
 steps:
 
 
+  # 1. Build and Test the Java application (using Maven in the app directory)
+  - name: 'maven:3.9.6-amazoncorretto-17' # Use a Maven builder with Java 17
+    id: 'Build and Test Java App'
+    entrypoint: 'mvn'
+    args: ['clean', 'install'] # 'install' also runs tests by default
+    dir: 'app' # IMPORTANT: Execute Maven commands from the 'app' directory
+
+  # 2. Build Docker image using the Dockerfile in the 'app' directory
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Docker Image'
+    args: [
+      'build',
+      '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA',
+      './app' # IMPORTANT: Tell Docker to look for Dockerfile and context in 'app'
+    ]
+  # 3. Push Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Docker Image'
+    args: [
+      'push',
+      '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
+    ]
+
+  # 4. Container vulnerability scan using Trivy
+  - name: 'aquasec/trivy:latest' # Use the official Trivy Docker image
+    id: 'Scan image with Trivy'
+    entrypoint: 'trivy'
+    args:
+      - 'image'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA'
+      - '--severity'
+      - 'CRITICAL' # Scan for Critical severity vulnerabilities only
+      - '--exit-code'
+      - '1' # Exit with code 1 if any specified severity vulnerabilities are found
+      - '--format'
+      - 'table' # Output format (table is good for logs, json/sarif for parsing)
+      - '--no-progress' # Suppress progress bar in CI/CD logs
+      - '--vuln-type' # Optional: Specify vulnerability types (os, library)
+      - 'os,library' # Only check OS package and application library vulnerabilities
+
+
+  # 5. Terraform Init, Validate, and Plan
+  # Assuming your Terraform files are in a directory named 'iac' at the root of your repo
+  - name: 'hashicorp/terraform:1.12.0' # Or a specific version like 'hashicorp/terraform:1.8.5'
+    id: 'Terraform Init, Validate, Plan'
+    entrypoint: 'sh'
+    dir: 'iac' # IMPORTANT: Change to the directory containing your Terraform files
+    args:
+      - '-c'
+      - |
+        # Initialize Terraform backend and providers
+        # -input=false: Don't prompt for input
+        # -lock=false: No state locking during init (be careful if multiple builds could run concurrently)
+        # -reconfigure: Useful if backend config changes, but can also be used generally.
+        terraform init -input=false
+
+        # Validate Terraform configuration syntax and consistency
+        terraform validate
+
+        # Generate a Terraform plan and save it to a file
+        # -out=planfile: Saves the plan to 'planfile' for later 'terraform apply' if desired
+        # -lock=false: Disables state locking during plan (again, use with caution)
+        # Add -var flags or -var-file if your plan requires input variables
+        terraform plan -out=planfile -lock=false
+
+        echo "Terraform init, validate, and plan completed successfully."
+
+
+  # 6. Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk' # Use the gcloud SDK builder
+    id: 'Deploy to Cloud Run'
+    entrypoint: 'gcloud' # Directly use gcloud as the entrypoint
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}' # The Cloud Run service name from substitutions
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/devops-challenge:$SHORT_SHA' # The image we built and pushed
+      - '--region=${_REGION}' # The region for the Cloud Run service from substitutions
+      - '--platform=managed' # Specifies Cloud Run (fully managed)
+      - '--allow-unauthenticated' # IMPORTANT: Allows public access. Remove or adjust for private services.
+      # You can add more flags here as needed, e.g.:
+      # - '--min-instances=0' # Default
+      # - '--max-instances=10' # Default
+      # - '--cpu=1' # Default
+      # - '--memory=512Mi' # Default
+      # - '--port=8080' # Default for Spring Boot, specify if different
+      # - '--set-env-vars=MY_ENV_VAR=my_value' # For environment variables
+      # - '--ingress=internal' # For internal-only access (e.g., from VPC)
+      # - '--service-account=my-service-account@${PROJECT_ID}.iam.gserviceaccount.com' # If not using default
+    waitFor:
+      - 'Push Docker Image' # Ensure image is pushed
+      - 'Scan image with Trivy' # Ensure image is scanned and passed checks
+      - 'Terraform Init, Validate, Plan' # Uncomment if you want to explicitly wait for Terraform plan to complete
+
   # 7. Health Check
   # This step fetches the Cloud Run URL and then curls its health endpoint
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
