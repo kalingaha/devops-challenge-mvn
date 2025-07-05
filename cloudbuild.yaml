@@ -72,7 +72,7 @@ steps:
         echo "**Service Name:** \`${_SERVICE_NAME}\`" >> /workspace/_OUT.md
         echo "**Region:** \`${_REGION}\`" >> /workspace/_OUT.md
         echo "" >> /workspace/_OUT.md
-        echo "🔗 **Service URL:** [${SERVICE_URL}](${SERVICE_URL})" >> /workspace/_OUT.md
+        echo "🔗 **Service URL:** [${_SERVICE_URL}](${_SERVICE_URL})" >> /workspace/_OUT.md
         echo "" >> /workspace/_OUT.md
         echo "---" >> /workspace/_OUT.md
 
